@@ -12,24 +12,34 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
 /**
- * @Class RequestHandler : Handles all HTTP requests made by the app (CONVERT THIS TO SINGLETON)
+ * @Singleton RequestHandler : Handles all HTTP requests made by the app
  */
-public class RequestHandler {
+class RequestHandler {
+
+    private static final RequestHandler requestInstance = new RequestHandler();
+
     private Context activityContext;
-    private String pageUrl;
     private RequestQueue queue;
 
-    public RequestHandler(Context activityContext, String pageUrl){
-        this.activityContext = activityContext;
-        this.pageUrl = pageUrl;
-        this.queue = Volley.newRequestQueue(this.activityContext);
+    /** Contructor is private to prevent creating multiple Request handlers throughout the program */
+    private RequestHandler(){}
+
+    /**
+     * @Method initData : resets the Context of the requestInstance and resets the Request Queue
+     * @param activityContext : Context of the Activity
+     */
+    public void initData(Context activityContext){
+        RequestHandler.requestInstance.activityContext = activityContext;
+        RequestHandler.requestInstance.queue = Volley.newRequestQueue(this.activityContext);
     }
 
-    public void newRequestQueue(){
-        // Instantiate the RequestQueue
-        String url = this.pageUrl;
+    /**
+     * @Method newGetRequest : Creates and stores a simple get request
+     * @param pageUrl : String  url of where to fetch the request
+     */
+    public void newGetRequest(String pageUrl){
         // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, pageUrl,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -42,14 +52,20 @@ public class RequestHandler {
                 Log.d("Error", error.toString());
             }
         });
-        this.queue.add(stringRequest);
+        RequestHandler.requestInstance.queue.add(stringRequest);
     }
 
+    /**
+     * @Method addToRequestQueue : Provides functionality for creating other Requests and adding it to the queue
+     * @param request : Request
+     */
     public void addToRequestQueue(Request request){
-        this.queue.add(request);
+        RequestHandler.requestInstance.queue.add(request);
     }
 
-    public String getPageUrl(){
-        return this.pageUrl;
-    }
+    /**
+     * @Method getInstance : Provides access to the instance
+     * @return RequestHandler
+     */
+    public static RequestHandler getInstance(){return requestInstance;}
 }

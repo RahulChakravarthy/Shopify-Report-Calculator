@@ -1,73 +1,76 @@
 package com.example.rahul.shopifyreportcalculator;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.example.rahul.shopifyreportcalculator.Core.baseActivity;
-import com.example.rahul.shopifyreportcalculator.Data.Order;
+import com.example.rahul.shopifyreportcalculator.Orders.LineItem;
+import com.example.rahul.shopifyreportcalculator.Orders.Order;
+import com.example.rahul.shopifyreportcalculator.Orders.Orders;
 import com.example.rahul.shopifyreportcalculator.HelperClasses.viewHelperClass;
 import com.google.gson.Gson;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 public class ReportsActivity extends baseActivity {
+    private Gson gson = new Gson(); //Using GSON libraries to parse JSON strings
 
-    RequestHandler requestHandler;
-    String content;
-    Gson gson = new Gson();
-    Order[] orders; //array holding all the orders gathered from the JSON request
+    private String content; //Stores captured raw JSON content after the request is processed
+    private final String jsonUrl = "https://shopicruit.myshopify.com/admin/orders.json?page=1&access_token=c32313df0d0ef512ca64d5b336a0d7c6"; //Url to the page containing JSON Data
+
+    private Orders orders;
+    private TextView totalBill;
+    private TextView totalQuantity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_reports);
-
         //Activity methods
         this.layoutSetup();
         this.requestJsonData();
+        this.captureJSONData();
     }
 
+    /**
+     * @Method
+     */
     protected void layoutSetup(){
-        RelativeLayout activityLayout = (RelativeLayout) findViewById(R.id.report_layout);
+        this.activityLayout = (RelativeLayout) findViewById(R.id.report_layout);
+        this.activityLayout.setBackgroundColor(Color.parseColor("#60D0DE"));
         this.viewHelperClass = new viewHelperClass(activityLayout, getApplicationContext(), this.getWindowManager().getDefaultDisplay());
 
         //Set Text based graphics
-        this.viewHelperClass.addText("Data Report", "OpenSans-Bold", "BLACK", 2, 35, 50, 25);
-        this.viewHelperClass.addText("Amount spent by Napolean Batz", "OpenSans-Regular", "BLACK", 2, 15, 50, 30);
-        this.viewHelperClass.addText("Amount of Awesome Bronze Bags Sold", "OpenSans-Regular", "BLACK", 2, 15, 50, 45);
+        this.viewHelperClass.addText("Data Report", "OpenSans-Bold", "BLACK", 2, 35, 50, 20);
+        this.viewHelperClass.addText("Amount spent by Napolean Batz (CAD):", "OpenSans-Bold", "BLACK", 2, 15, 50, 30);
 
-        new Handler().postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                viewHelperClass.addText(content, "OpenSans-Bold", "BLACK", 1, 10, 5, 50);
-                orders = gson.fromJson(content, Order[].class);
-            }
-        }, 1000);
+        this.totalBill = new TextView(getApplicationContext());
+        this.viewHelperClass.addText(totalBill, "Loading Data ...", "OpenSans-Regular", "BLACK", 15, 50, 35, false);
+
+        this.viewHelperClass.addText("Amount of Awesome Bronze Bags Sold:", "OpenSans-Bold", "BLACK", 2, 15, 50, 45);
+
+        this.totalQuantity = new TextView(getApplicationContext());
+        this.viewHelperClass.addText(totalQuantity, "Loading Data ...", "OpenSans-Regular", "BLACK", 15, 50, 50, false);
+
     }
 
     protected void requestJsonData(){
-        this.requestHandler = new RequestHandler(getApplicationContext(), "https://shopicruit.myshopify.com/admin/orders.json?page=1&access_token=c32313df0d0ef512ca64d5b336a0d7c6");
-        this.requestHandler.newRequestQueue();
+        RequestHandler.getInstance().initData(getApplicationContext());
         JsonObjectRequest jsObjRequest = new JsonObjectRequest
-                (Request.Method.GET, this.requestHandler.getPageUrl(), null, new Response.Listener<JSONObject>() {
+                (Request.Method.GET, this.jsonUrl, null, new Response.Listener<JSONObject>() {
 
                     @Override
                     public void onResponse(JSONObject response) {
                         //Capture Raw JSON data as String
-                        try {
-                            content = response.getString("orders");
-                            Log.d("content", content);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                        //
+                        content = response.toString();
                     }
                 }, new Response.ErrorListener() {
                     @Override
@@ -76,8 +79,53 @@ public class ReportsActivity extends baseActivity {
                     }
                 });
 
-        this.requestHandler.addToRequestQueue(jsObjRequest);
+        RequestHandler.getInstance().addToRequestQueue(jsObjRequest);
     }
 
+    protected void captureJSONData(){
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                orders = gson.fromJson(content, Orders.class);
+                calculateData();
+            }
+        }, 1500); //Temporarily using postDelayed on new handler, next time, implement it using java Futures and Promises so that data loads as soon as the Request is Complete
+    }
 
+    private void calculateData() {
+        float totalAmountInCAD = 0;
+        int totalBronzeBags = 0;
+
+        for (Order order : orders.getOrders()){
+            //Calculate quantity of bronze bags sold
+            if (order.getLineItems() != null){
+                for (LineItem item : order.getLineItems()){
+                    totalBronzeBags += item.getQuantity();
+                }
+            }
+
+            //Calculate Amount spent by Napoleon Batz
+            if (order.getCustomer() != null){
+                //check to make sure Napoleon Batz submitted this order
+                String desiredFirstName = "Napoleon";
+                String desiredLastName = "Batz";
+
+                if (order.getCustomer().getFirstName().equals(desiredFirstName) && order.getCustomer().getLastName().equals(desiredLastName)){
+                    //Check to make sure the currency is in CAD
+                    String desiredCurrency = "CAD";
+                    if (order.getCurrency().equals(desiredCurrency)){
+                        //Add it to the total bill
+                        totalAmountInCAD += Float.parseFloat(order.getTotalPrice());
+                    } else {
+                        //Was not specified what to do if amount was not in CAD but I would convert it to cad then add
+                    }
+                }
+            }
+        }
+        //shift textview to align it properly
+        this.totalQuantity.setX(this.totalQuantity.getX() - 200);
+        this.totalQuantity.setText(String.valueOf(totalBronzeBags) +  " Awesome Bronze Bags Sold");
+        this.totalBill.setX(this.totalBill.getX() + 50);
+        this.totalBill.setText("$" + String.valueOf(totalAmountInCAD));
+    }
 }
