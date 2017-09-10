@@ -11,6 +11,7 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.example.rahul.shopifyreportcalculator.Core.RequestHandler;
 import com.example.rahul.shopifyreportcalculator.Core.baseActivity;
 import com.example.rahul.shopifyreportcalculator.Orders.LineItem;
 import com.example.rahul.shopifyreportcalculator.Orders.Order;
@@ -21,6 +22,7 @@ import com.google.gson.Gson;
 import org.json.JSONObject;
 
 public class ReportsActivity extends baseActivity {
+
     private Gson gson = new Gson(); //Using GSON libraries to parse JSON strings
 
     private String content; //Stores captured raw JSON content after the request is processed
@@ -37,11 +39,11 @@ public class ReportsActivity extends baseActivity {
         //Activity methods
         this.layoutSetup();
         this.requestJsonData();
-        this.captureJSONData();
+        this.parseJSONData();
     }
 
     /**
-     * @Method
+     * @Method layoutSetup : creates and sets up all static views that show up when the app is created
      */
     protected void layoutSetup(){
         this.activityLayout = (RelativeLayout) findViewById(R.id.report_layout);
@@ -50,7 +52,7 @@ public class ReportsActivity extends baseActivity {
 
         //Set Text based graphics
         this.viewHelperClass.addText("Data Report", "OpenSans-Bold", "BLACK", 2, 35, 50, 20);
-        this.viewHelperClass.addText("Amount spent by Napolean Batz (CAD):", "OpenSans-Bold", "BLACK", 2, 15, 50, 30);
+        this.viewHelperClass.addText("Amount spent by Napoleon Batz (CAD):", "OpenSans-Bold", "BLACK", 2, 15, 50, 30);
 
         this.totalBill = new TextView(getApplicationContext());
         this.viewHelperClass.addText(totalBill, "Loading Data ...", "OpenSans-Regular", "BLACK", 15, 50, 35, false);
@@ -62,6 +64,9 @@ public class ReportsActivity extends baseActivity {
 
     }
 
+    /**
+     * @Method requestJsonData : Creates and adds a JsonObjectRequest to the RequestQueue to retrieve data from the Shopify API endpoint
+     */
     protected void requestJsonData(){
         RequestHandler.getInstance().initData(getApplicationContext());
         JsonObjectRequest jsObjRequest = new JsonObjectRequest
@@ -82,7 +87,10 @@ public class ReportsActivity extends baseActivity {
         RequestHandler.getInstance().addToRequestQueue(jsObjRequest);
     }
 
-    protected void captureJSONData(){
+    /**
+     * @Method parseJSONData : parses Json data that was captured as a string and uses GSON libraries to populate the orders Object
+     */
+    protected void parseJSONData(){
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -92,6 +100,9 @@ public class ReportsActivity extends baseActivity {
         }, 1500); //Temporarily using postDelayed on new handler, next time, implement it using java Futures and Promises so that data loads as soon as the Request is Complete
     }
 
+    /**
+     * @Method calculateData : calculates total Amount spent by Napoleon Batz and the Total number of Bronze Bags sold
+     */
     private void calculateData() {
         float totalAmountInCAD = 0;
         int totalBronzeBags = 0;

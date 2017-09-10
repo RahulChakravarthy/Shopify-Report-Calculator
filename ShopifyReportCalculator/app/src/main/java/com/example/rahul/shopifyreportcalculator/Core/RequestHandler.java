@@ -1,4 +1,4 @@
-package com.example.rahul.shopifyreportcalculator;
+package com.example.rahul.shopifyreportcalculator.Core;
 
 
 import android.content.Context;
@@ -14,7 +14,7 @@ import com.android.volley.toolbox.Volley;
 /**
  * @Singleton RequestHandler : Handles all HTTP requests made by the app
  */
-class RequestHandler {
+public class RequestHandler {
 
     private static final RequestHandler requestInstance = new RequestHandler();
 
