@@ -97,7 +97,7 @@ public class ReportsActivity extends baseActivity {
                 orders = gson.fromJson(content, Orders.class);
                 calculateData();
             }
-        }, 1500); //Temporarily using postDelayed on new handler, next time, implement it using java Futures and Promises so that data loads as soon as the Request is Complete
+        }, 2000); //Temporarily using postDelayed on new handler, next time, implement it using java Futures and Promises so that data loads as soon as the Request is Complete
     }
 
     /**
