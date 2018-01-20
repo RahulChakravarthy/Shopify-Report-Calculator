@@ -21,7 +21,7 @@ public class RequestHandler {
     private Context activityContext;
     private RequestQueue queue;
 
-    /** Contructor is private to prevent creating multiple Request handlers throughout the program */
+    /** Constructor is private to prevent creating multiple Request handlers throughout the program */
     private RequestHandler(){}
 
     /**
